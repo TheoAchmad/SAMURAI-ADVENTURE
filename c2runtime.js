@@ -24260,7 +24260,6 @@ cr.getObjectRefTable = function () { return [
 	cr.plugins_.Text.prototype.acts.SetText,
 	cr.system_object.prototype.cnds.ForEach,
 	cr.plugins_.Sprite.prototype.acts.SetWidth,
-	cr.plugins_.Keyboard.prototype.cnds.OnKey,
 	cr.plugins_.Sprite.prototype.acts.AddInstanceVar,
 	cr.system_object.prototype.exps.dt,
 	cr.system_object.prototype.cnds.Compare,
