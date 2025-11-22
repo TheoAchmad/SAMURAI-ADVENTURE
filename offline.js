@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1763804207,
+	"version": 1763807324,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -30,6 +30,10 @@
 		"images/wadahbar-sheet0.png",
 		"images/barhijau-sheet0.png",
 		"images/sprite16-sheet0.png",
+		"media/sword slash1_cut (mp3cut.net).m4a",
+		"media/sword slash1_cut (mp3cut.net).ogg",
+		"media/sword slash (sound effects) mani creation (mp3cut.net).m4a",
+		"media/sword slash (sound effects) mani creation (mp3cut.net).ogg",
 		"media/jim yosef - samurai drumstep ncs - copyright free music (mp3cut.net).m4a",
 		"media/jim yosef - samurai drumstep ncs - copyright free music (mp3cut.net).ogg",
 		"media/fighting action no copyright music(action background music) - drums percussion [no copyright-free] (mp3cut.net).m4a",

@@ -24269,6 +24269,7 @@ cr.getObjectRefTable = function () { return [
 	cr.behaviors.Flash.prototype.acts.Flash,
 	cr.system_object.prototype.cnds.Else,
 	cr.plugins_.Sprite.prototype.cnds.CompareX,
+	cr.plugins_.Sprite.prototype.acts.MoveToTop,
 	cr.system_object.prototype.acts.RestartLayout,
 	cr.plugins_.Mouse.prototype.cnds.OnObjectClicked,
 	cr.plugins_.Audio.prototype.acts.Stop,
