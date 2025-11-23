@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1763914085,
+	"version": 1763915827,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -42,6 +42,10 @@
 		"images/sprite21-sheet0.png",
 		"images/sprite22-sheet0.png",
 		"images/sprite24-sheet0.png",
+		"images/tombolattack-sheet0.png",
+		"images/kiri-sheet0.png",
+		"images/kanan-sheet0.png",
+		"images/atas-sheet0.png",
 		"media/sword slash1_cut (mp3cut.net).m4a",
 		"media/sword slash1_cut (mp3cut.net).ogg",
 		"media/sword slash (sound effects) mani creation (mp3cut.net).m4a",

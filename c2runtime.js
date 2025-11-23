@@ -25202,6 +25202,7 @@ cr.getObjectRefTable = function () { return [
 	cr.system_object.prototype.acts.RestartLayout,
 	cr.plugins_.Touch.prototype.cnds.OnTapGestureObject,
 	cr.behaviors.Timer.prototype.acts.StartTimer,
+	cr.plugins_.Touch.prototype.cnds.IsTouchingObject,
 	cr.plugins_.Audio.prototype.acts.Stop,
 	cr.system_object.prototype.acts.GoToLayout,
 	cr.plugins_.Sprite.prototype.cnds.CompareWidth,
