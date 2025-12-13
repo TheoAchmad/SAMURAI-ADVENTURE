@@ -20085,13 +20085,14 @@ cr.plugins_.Sprite = function(runtime)
 /* jshint strict: true */
 ;
 ;
-cr.plugins_.Spritefont2 = function(runtime)
+var jText = '';
+cr.plugins_.SpriteFontPlus = function(runtime)
 {
 	this.runtime = runtime;
 };
 (function ()
 {
-	var pluginProto = cr.plugins_.Spritefont2.prototype;
+	var pluginProto = cr.plugins_.SpriteFontPlus.prototype;
 	pluginProto.onCreate = function ()
 	{
 	};
@@ -20106,7 +20107,9 @@ cr.plugins_.Spritefont2 = function(runtime)
 		if (this.is_family)
 			return;
 		this.texture_img = new Image();
-		this.runtime.waitForImageLoad(this.texture_img, this.texture_file);
+		this.texture_img["idtkLoadDisposed"] = true;
+		this.texture_img.src = this.texture_file;
+		this.runtime.wait_for_textures.push(this.texture_img);
 		this.webGL_texture = null;
 	};
 	typeProto.onLostWebGLContext = function ()
@@ -20160,16 +20163,20 @@ cr.plugins_.Spritefont2 = function(runtime)
 		this.text             = this.properties[3];
 		this.characterScale   = this.properties[4];
 		this.visible          = (this.properties[5] === 0);	// 0=visible, 1=invisible
-		this.halign           = this.properties[6]/2.0;		// 0=left, 1=center, 2=right
-		this.valign           = this.properties[7]/2.0;		// 0=top, 1=center, 2=bottom
+		this.halign           = this.properties[6]/2.0;			// 0=left, 1=center, 2=right
+		this.valign           = this.properties[7]/2.0;			// 0=top, 1=center, 2=bottom
 		this.wrapbyword       = (this.properties[9] === 0);	// 0=word, 1=character
 		this.characterSpacing = this.properties[10];
 		this.lineHeight       = this.properties[11];
 		this.textWidth  = 0;
 		this.textHeight = 0;
+		this.charWidthJSON	  = this.properties[12];
+		this.spaceWidth 	  = this.properties[13];
+		console.log(this.charWidthJSON);
+		jText = this.charWidthJSON;
 		if (this.recycled)
 		{
-			cr.clearArray(this.lines);
+			this.lines.length = 0;
 			cr.wipe(this.clipList);
 			cr.wipe(this.clipUV);
 			cr.wipe(this.characterWidthList);
@@ -20180,6 +20187,39 @@ cr.plugins_.Spritefont2 = function(runtime)
 			this.clipList = {};
 			this.clipUV = {};
 			this.characterWidthList = {};
+		}
+		try{
+			if(this.charWidthJSON){
+				if(this.charWidthJSON.indexOf('""c2array""') !== -1) {
+					var jStr = jQuery.parseJSON(this.charWidthJSON.replace(/""/g,'"'));
+					var l = jStr.size[1];
+					for(var s = 0; s < l; s++) {
+						var cs = jStr.data[1][s][0];
+						var w = jStr.data[0][s][0];
+						for(var c = 0; c < cs.length; c++) {
+							this.characterWidthList[cs.charAt(c)] = w
+						}
+					}
+				} else {
+					var jStr = jQuery.parseJSON(this.charWidthJSON);
+					var l = jStr.length;
+					for(var s = 0; s < l; s++) {
+						var cs = jStr[s][1];
+						var w = jStr[s][0];
+						for(var c = 0; c < cs.length; c++) {
+							this.characterWidthList[cs.charAt(c)] = w
+						}
+					}
+				}
+			}
+			if(this.spaceWidth !== -1) {
+				this.characterWidthList[' '] = this.spaceWidth;
+			}
+		}
+		catch(e){
+			if(window.console && window.console.log) {
+				window.console.log('SpriteFont+ Failure: ' + e);
+			}
 		}
 		this.text_changed = true;
 		this.lastwrapwidth = this.width;
@@ -20203,8 +20243,6 @@ cr.plugins_.Spritefont2 = function(runtime)
 			"tw": this.textWidth,
 			"th": this.textHeight,
 			"lrt": this.last_render_tick,
-			"ha": this.halign,
-			"va": this.valign,
 			"cw": {}
 		};
 		for (var ch in this.characterWidthList)
@@ -20220,10 +20258,6 @@ cr.plugins_.Spritefont2 = function(runtime)
 		this.textWidth = o["tw"];
 		this.textHeight = o["th"];
 		this.last_render_tick = o["lrt"];
-		if (o.hasOwnProperty("ha"))
-			this.halign = o["ha"];
-		if (o.hasOwnProperty("va"))
-			this.valign = o["va"];
 		for(var ch in o["cw"])
 			this.characterWidthList[ch] = o["cw"][ch];
 		this.text_changed = true;
@@ -20256,7 +20290,7 @@ cr.plugins_.Spritefont2 = function(runtime)
 			{
 				free(cache,dataList[i]);
 			}
-			cr.clearArray(dataList);
+			dataList.length = 0;
 		} else {
 			var prop;
 			for(prop in dataList) {
@@ -20347,7 +20381,7 @@ cr.plugins_.Spritefont2 = function(runtime)
 	var wordsCache = [];
 	pluginProto.TokeniseWords = function (text)
 	{
-		cr.clearArray(wordsCache);
+		wordsCache.length = 0;
 		var cur_word = "";
 		var ch;
 		var i = 0;
@@ -20522,17 +20556,12 @@ cr.plugins_.Spritefont2 = function(runtime)
 			var myy = this.y;
 			if (this.runtime.pixel_rounding)
 			{
-				myx = Math.round(myx);
-				myy = Math.round(myy);
+				myx = (myx + 0.5) | 0;
+				myy = (myy + 0.5) | 0;
 			}
-			var viewLeft = this.layer.viewLeft;
-			var viewTop = this.layer.viewTop;
-			var viewRight = this.layer.viewRight;
-			var viewBottom = this.layer.viewBottom;
 			ctx.save();
 			ctx.translate(myx, myy);
 			ctx.rotate(this.angle);
-			var angle      = this.angle;
 			var ha         = this.halign;
 			var va         = this.valign;
 			var scale      = this.characterScale;
@@ -20541,7 +20570,6 @@ cr.plugins_.Spritefont2 = function(runtime)
 			var charSpace  = this.characterSpacing;
 			var lines = this.lines;
 			var textHeight = this.textHeight;
-			var letterWidth;
 			var halign;
 			var valign = va * cr.max(0,(this.height - textHeight));
 			var offx = -(this.hotspotX * this.width);
@@ -20549,49 +20577,27 @@ cr.plugins_.Spritefont2 = function(runtime)
 			offy += valign;
 			var drawX ;
 			var drawY = offy;
-			var roundX, roundY;
 			for(var i = 0; i < lines.length; i++) {
 				var line = lines[i].text;
 				var len  = lines[i].width;
 				halign = ha * cr.max(0,this.width - len);
 				drawX = offx + halign;
 				drawY += lineHeight;
-				if (angle === 0 && myy + drawY + charHeight < viewTop)
-				{
-					drawY += charHeight;
-					continue;
-				}
 				for(var j = 0; j < line.length; j++) {
 					var letter = line.charAt(j);
-					letterWidth = this.getCharacterWidth(letter);
 					var clip = this.clipList[letter];
-					if (angle === 0 && myx + drawX + letterWidth * scale + charSpace < viewLeft)
-					{
-						drawX += letterWidth * scale + charSpace;
-						continue;
-					}
-					if ( drawX + letterWidth * scale > this.width + EPSILON ) {
+					if ( drawX + this.getCharacterWidth(letter) * scale > this.width + EPSILON ) {
 						break;
 					}
 					if (clip !== undefined) {
-						roundX = drawX;
-						roundY = drawY;
-						if (angle === 0 && scale === 1)
-						{
-							roundX = Math.round(roundX);
-							roundY = Math.round(roundY);
-						}
 						ctx.drawImage( this.texture_img,
 									 clip.x, clip.y, clip.w, clip.h,
-									 roundX,roundY,clip.w*scale,clip.h*scale);
+									 Math.round(drawX),Math.round(drawY),clip.w*scale,clip.h*scale);
 					}
-					drawX += letterWidth * scale + charSpace;
-					if (angle === 0 && myx + drawX > viewRight)
-						break;
+					drawX  += this.getCharacterWidth(letter) * scale + charSpace;
 				}
 				drawY += charHeight;
-				if (angle === 0 && (drawY + charHeight + lineHeight > this.height || myy + drawY > viewBottom))
-				{
+				if ( drawY + charHeight + lineHeight > this.height) {
 					break;
 				}
 			}
@@ -20618,111 +20624,83 @@ cr.plugins_.Spritefont2 = function(runtime)
 	{
 		glw.setTexture(this.webGL_texture);
 		glw.setOpacity(this.opacity);
-		if (!this.text)
-			return;
-		this.rebuildText();
-		if (this.height < this.characterHeight*this.characterScale + this.lineHeight) {
-			return;
-		}
-		this.update_bbox();
-		var q = this.bquad;
-		var ox = 0;
-		var oy = 0;
-		if (this.runtime.pixel_rounding)
-		{
-			ox = Math.round(this.x) - this.x;
-			oy = Math.round(this.y) - this.y;
-		}
-		var viewLeft = this.layer.viewLeft;
-		var viewTop = this.layer.viewTop;
-		var viewRight = this.layer.viewRight;
-		var viewBottom = this.layer.viewBottom;
-		var angle      = this.angle;
-		var ha         = this.halign;
-		var va         = this.valign;
-		var scale      = this.characterScale;
-		var charHeight = this.characterHeight * scale;   // to precalculate in onCreate or on change
-		var lineHeight = this.lineHeight;
-		var charSpace  = this.characterSpacing;
-		var lines = this.lines;
-		var textHeight = this.textHeight;
-		var letterWidth;
-		var cosa,sina;
-		if (angle !== 0)
-		{
-			cosa = Math.cos(angle);
-			sina = Math.sin(angle);
-		}
-		var halign;
-		var valign = va * cr.max(0,(this.height - textHeight));
-		var offx = q.tlx + ox;
-		var offy = q.tly + oy;
-		var drawX ;
-		var drawY = valign;
-		var roundX, roundY;
-		for(var i = 0; i < lines.length; i++) {
-			var line       = lines[i].text;
-			var lineWidth  = lines[i].width;
-			halign = ha * cr.max(0,this.width - lineWidth);
-			drawX = halign;
-			drawY += lineHeight;
-			if (angle === 0 && offy + drawY + charHeight < viewTop)
+		if (this.text !== "") {
+			this.rebuildText();
+			if (this.height < this.characterHeight*this.characterScale + this.lineHeight) {
+				return;
+			}
+			this.update_bbox();
+			var q = this.bquad;
+			var ox = 0;
+			var oy = 0;
+			if (this.runtime.pixel_rounding)
 			{
+				ox = ((this.x + 0.5) | 0) - this.x;
+				oy = ((this.y + 0.5) | 0) - this.y;
+			}
+			var angle      = this.angle;
+			var ha         = this.halign;
+			var va         = this.valign;
+			var scale      = this.characterScale;
+			var charHeight = this.characterHeight * scale;   // to precalculate in onCreate or on change
+			var lineHeight = this.lineHeight;
+			var charSpace  = this.characterSpacing;
+			var lines = this.lines;
+			var textHeight = this.textHeight;
+			var cosa,sina;
+			if (angle !== 0)
+			{
+				cosa = Math.cos(angle);
+				sina = Math.sin(angle);
+			}
+			var halign;
+			var valign = va * cr.max(0,(this.height - textHeight));
+			var offx = q.tlx + ox;
+			var offy = q.tly + oy;
+			var drawX ;
+			var drawY = valign;
+			for(var i = 0; i < lines.length; i++) {
+				var line       = lines[i].text;
+				var lineWidth  = lines[i].width;
+				halign = ha * cr.max(0,this.width - lineWidth);
+				drawX = halign;
+				drawY += lineHeight;
+				for(var j = 0; j < line.length; j++) {
+					var letter = line.charAt(j);
+					var clipUV = this.clipUV[letter];
+					if ( drawX + this.getCharacterWidth(letter) * scale  > this.width + EPSILON) {
+						break;
+					}
+					if (clipUV !== undefined) {
+						var clipWidth  = this.characterWidth*scale;
+						var clipHeight = this.characterHeight*scale;
+						dQuad.tlx  = drawX;
+						dQuad.tly  = drawY;
+						dQuad.trx  = drawX + clipWidth;
+						dQuad.try_ = drawY ;
+						dQuad.blx  = drawX;
+						dQuad.bly  = drawY + clipHeight;
+						dQuad.brx  = drawX + clipWidth;
+						dQuad.bry  = drawY + clipHeight;
+						if(angle !== 0)
+						{
+							rotateQuad(dQuad,cosa,sina);
+						}
+						dQuad.offset(offx,offy);
+						glw.quadTex(
+							dQuad.tlx, dQuad.tly,
+							dQuad.trx, dQuad.try_,
+							dQuad.brx, dQuad.bry,
+							dQuad.blx, dQuad.bly,
+							clipUV
+						);
+					}
+					drawX  += this.getCharacterWidth(letter) * scale + charSpace;
+				}
 				drawY += charHeight;
-				continue;
-			}
-			for(var j = 0; j < line.length; j++) {
-				var letter = line.charAt(j);
-				letterWidth = this.getCharacterWidth(letter);
-				var clipUV = this.clipUV[letter];
-				if (angle === 0 && offx + drawX + letterWidth * scale + charSpace < viewLeft)
-				{
-					drawX += letterWidth * scale + charSpace;
-					continue;
-				}
-				if (drawX + letterWidth * scale > this.width + EPSILON)
-				{
+				if ( drawY + charHeight + lineHeight > this.height) {
 					break;
 				}
-				if (clipUV !== undefined) {
-					var clipWidth  = this.characterWidth*scale;
-					var clipHeight = this.characterHeight*scale;
-					roundX = drawX;
-					roundY = drawY;
-					if (angle === 0 && scale === 1)
-					{
-						roundX = Math.round(roundX);
-						roundY = Math.round(roundY);
-					}
-					dQuad.tlx  = roundX;
-					dQuad.tly  = roundY;
-					dQuad.trx  = roundX + clipWidth;
-					dQuad.try_ = roundY ;
-					dQuad.blx  = roundX;
-					dQuad.bly  = roundY + clipHeight;
-					dQuad.brx  = roundX + clipWidth;
-					dQuad.bry  = roundY + clipHeight;
-					if(angle !== 0)
-					{
-						rotateQuad(dQuad,cosa,sina);
-					}
-					dQuad.offset(offx,offy);
-					glw.quadTex(
-						dQuad.tlx, dQuad.tly,
-						dQuad.trx, dQuad.try_,
-						dQuad.brx, dQuad.bry,
-						dQuad.blx, dQuad.bly,
-						clipUV
-					);
-				}
-				drawX += letterWidth * scale + charSpace;
-				if (angle === 0 && offx + drawX > viewRight)
-					break;
-			}
-			drawY += charHeight;
-			if (angle === 0 && (drawY + charHeight + lineHeight > this.height || offy + drawY > viewBottom))
-			{
-				break;
 			}
 		}
 	};
@@ -20802,21 +20780,8 @@ cr.plugins_.Spritefont2 = function(runtime)
 	};
 	Acts.prototype.SetEffect = function (effect)
 	{
-		this.blend_mode = effect;
 		this.compositeOp = cr.effectToCompositeOp(effect);
 		cr.setGLBlend(this, effect, this.runtime.gl);
-		this.runtime.redraw = true;
-	};
-	Acts.prototype.SetHAlign = function (a)
-	{
-		this.halign = a / 2.0;
-		this.text_changed = true;
-		this.runtime.redraw = true;
-	};
-	Acts.prototype.SetVAlign = function (a)
-	{
-		this.valign = a / 2.0;
-		this.text_changed = true;
 		this.runtime.redraw = true;
 	};
 	pluginProto.acts = new Acts();
@@ -21488,204 +21453,6 @@ cr.plugins_.Text = function(runtime)
 	Exps.prototype.TextHeight = function (ret)
 	{
 		ret.set_int(this.lines.length * (this.pxHeight + this.line_height_offset) - this.line_height_offset);
-	};
-	pluginProto.exps = new Exps();
-}());
-;
-;
-cr.plugins_.TiledBg = function(runtime)
-{
-	this.runtime = runtime;
-};
-(function ()
-{
-	var pluginProto = cr.plugins_.TiledBg.prototype;
-	pluginProto.Type = function(plugin)
-	{
-		this.plugin = plugin;
-		this.runtime = plugin.runtime;
-	};
-	var typeProto = pluginProto.Type.prototype;
-	typeProto.onCreate = function()
-	{
-		if (this.is_family)
-			return;
-		this.texture_img = new Image();
-		this.texture_img.cr_filesize = this.texture_filesize;
-		this.runtime.waitForImageLoad(this.texture_img, this.texture_file);
-		this.pattern = null;
-		this.webGL_texture = null;
-	};
-	typeProto.onLostWebGLContext = function ()
-	{
-		if (this.is_family)
-			return;
-		this.webGL_texture = null;
-	};
-	typeProto.onRestoreWebGLContext = function ()
-	{
-		if (this.is_family || !this.instances.length)
-			return;
-		if (!this.webGL_texture)
-		{
-			this.webGL_texture = this.runtime.glwrap.loadTexture(this.texture_img, true, this.runtime.linearSampling, this.texture_pixelformat);
-		}
-		var i, len;
-		for (i = 0, len = this.instances.length; i < len; i++)
-			this.instances[i].webGL_texture = this.webGL_texture;
-	};
-	typeProto.loadTextures = function ()
-	{
-		if (this.is_family || this.webGL_texture || !this.runtime.glwrap)
-			return;
-		this.webGL_texture = this.runtime.glwrap.loadTexture(this.texture_img, true, this.runtime.linearSampling, this.texture_pixelformat);
-	};
-	typeProto.unloadTextures = function ()
-	{
-		if (this.is_family || this.instances.length || !this.webGL_texture)
-			return;
-		this.runtime.glwrap.deleteTexture(this.webGL_texture);
-		this.webGL_texture = null;
-	};
-	typeProto.preloadCanvas2D = function (ctx)
-	{
-		ctx.drawImage(this.texture_img, 0, 0);
-	};
-	pluginProto.Instance = function(type)
-	{
-		this.type = type;
-		this.runtime = type.runtime;
-	};
-	var instanceProto = pluginProto.Instance.prototype;
-	instanceProto.onCreate = function()
-	{
-		this.visible = (this.properties[0] === 0);							// 0=visible, 1=invisible
-		this.rcTex = new cr.rect(0, 0, 0, 0);
-		this.has_own_texture = false;										// true if a texture loaded in from URL
-		this.texture_img = this.type.texture_img;
-		if (this.runtime.glwrap)
-		{
-			this.type.loadTextures();
-			this.webGL_texture = this.type.webGL_texture;
-		}
-		else
-		{
-			if (!this.type.pattern)
-				this.type.pattern = this.runtime.ctx.createPattern(this.type.texture_img, "repeat");
-			this.pattern = this.type.pattern;
-		}
-	};
-	instanceProto.afterLoad = function ()
-	{
-		this.has_own_texture = false;
-		this.texture_img = this.type.texture_img;
-	};
-	instanceProto.onDestroy = function ()
-	{
-		if (this.runtime.glwrap && this.has_own_texture && this.webGL_texture)
-		{
-			this.runtime.glwrap.deleteTexture(this.webGL_texture);
-			this.webGL_texture = null;
-		}
-	};
-	instanceProto.draw = function(ctx)
-	{
-		ctx.globalAlpha = this.opacity;
-		ctx.save();
-		ctx.fillStyle = this.pattern;
-		var myx = this.x;
-		var myy = this.y;
-		if (this.runtime.pixel_rounding)
-		{
-			myx = Math.round(myx);
-			myy = Math.round(myy);
-		}
-		var drawX = -(this.hotspotX * this.width);
-		var drawY = -(this.hotspotY * this.height);
-		var offX = drawX % this.texture_img.width;
-		var offY = drawY % this.texture_img.height;
-		if (offX < 0)
-			offX += this.texture_img.width;
-		if (offY < 0)
-			offY += this.texture_img.height;
-		ctx.translate(myx, myy);
-		ctx.rotate(this.angle);
-		ctx.translate(offX, offY);
-		ctx.fillRect(drawX - offX,
-					 drawY - offY,
-					 this.width,
-					 this.height);
-		ctx.restore();
-	};
-	instanceProto.drawGL_earlyZPass = function(glw)
-	{
-		this.drawGL(glw);
-	};
-	instanceProto.drawGL = function(glw)
-	{
-		glw.setTexture(this.webGL_texture);
-		glw.setOpacity(this.opacity);
-		var rcTex = this.rcTex;
-		rcTex.right = this.width / this.texture_img.width;
-		rcTex.bottom = this.height / this.texture_img.height;
-		var q = this.bquad;
-		if (this.runtime.pixel_rounding)
-		{
-			var ox = Math.round(this.x) - this.x;
-			var oy = Math.round(this.y) - this.y;
-			glw.quadTex(q.tlx + ox, q.tly + oy, q.trx + ox, q.try_ + oy, q.brx + ox, q.bry + oy, q.blx + ox, q.bly + oy, rcTex);
-		}
-		else
-			glw.quadTex(q.tlx, q.tly, q.trx, q.try_, q.brx, q.bry, q.blx, q.bly, rcTex);
-	};
-	function Cnds() {};
-	Cnds.prototype.OnURLLoaded = function ()
-	{
-		return true;
-	};
-	pluginProto.cnds = new Cnds();
-	function Acts() {};
-	Acts.prototype.SetEffect = function (effect)
-	{
-		this.blend_mode = effect;
-		this.compositeOp = cr.effectToCompositeOp(effect);
-		cr.setGLBlend(this, effect, this.runtime.gl);
-		this.runtime.redraw = true;
-	};
-	Acts.prototype.LoadURL = function (url_, crossOrigin_)
-	{
-		var img = new Image();
-		var self = this;
-		img.onload = function ()
-		{
-			self.texture_img = img;
-			if (self.runtime.glwrap)
-			{
-				if (self.has_own_texture && self.webGL_texture)
-					self.runtime.glwrap.deleteTexture(self.webGL_texture);
-				self.webGL_texture = self.runtime.glwrap.loadTexture(img, true, self.runtime.linearSampling);
-			}
-			else
-			{
-				self.pattern = self.runtime.ctx.createPattern(img, "repeat");
-			}
-			self.has_own_texture = true;
-			self.runtime.redraw = true;
-			self.runtime.trigger(cr.plugins_.TiledBg.prototype.cnds.OnURLLoaded, self);
-		};
-		if (url_.substr(0, 5) !== "data:" && crossOrigin_ === 0)
-			img.crossOrigin = "anonymous";
-		this.runtime.setImageSrc(img, url_);
-	};
-	pluginProto.acts = new Acts();
-	function Exps() {};
-	Exps.prototype.ImageWidth = function (ret)
-	{
-		ret.set_float(this.texture_img.width);
-	};
-	Exps.prototype.ImageHeight = function (ret)
-	{
-		ret.set_float(this.texture_img.height);
 	};
 	pluginProto.exps = new Exps();
 }());
@@ -25142,10 +24909,9 @@ cr.getObjectRefTable = function () { return [
 	cr.plugins_.Keyboard,
 	cr.plugins_.Mouse,
 	cr.plugins_.Sprite,
-	cr.plugins_.Spritefont2,
-	cr.plugins_.Text,
 	cr.plugins_.Touch,
-	cr.plugins_.TiledBg,
+	cr.plugins_.SpriteFontPlus,
+	cr.plugins_.Text,
 	cr.behaviors.solid,
 	cr.behaviors.Platform,
 	cr.behaviors.scrollto,
@@ -25171,15 +24937,21 @@ cr.getObjectRefTable = function () { return [
 	cr.plugins_.Sprite.prototype.cnds.IsBoolInstanceVarSet,
 	cr.plugins_.Sprite.prototype.acts.SetAnim,
 	cr.behaviors.Platform.prototype.cnds.IsMoving,
-	cr.behaviors.Timer.prototype.cnds.OnTimer,
+	cr.plugins_.Keyboard.prototype.cnds.OnKey,
+	cr.behaviors.Timer.prototype.acts.StartTimer,
 	cr.plugins_.Sprite.prototype.acts.SetBoolInstanceVar,
+	cr.plugins_.Sprite.prototype.cnds.CompareInstanceVar,
+	cr.system_object.prototype.acts.CreateObject,
+	cr.plugins_.Sprite.prototype.exps.ImagePointX,
+	cr.plugins_.Sprite.prototype.exps.ImagePointY,
 	cr.plugins_.Sprite.prototype.acts.SetInstanceVar,
+	cr.system_object.prototype.cnds.Else,
+	cr.behaviors.Timer.prototype.cnds.OnTimer,
 	cr.plugins_.Sprite.prototype.cnds.OnAnimFinished,
 	cr.plugins_.Sprite.prototype.cnds.IsAnimPlaying,
 	cr.plugins_.Sprite.prototype.acts.Destroy,
 	cr.plugins_.Sprite.prototype.cnds.OnCollision,
 	cr.plugins_.Sprite.prototype.acts.SubInstanceVar,
-	cr.plugins_.Sprite.prototype.cnds.CompareInstanceVar,
 	cr.behaviors.Platform.prototype.acts.SetEnabled,
 	cr.system_object.prototype.acts.AddVar,
 	cr.plugins_.Text.prototype.acts.SetText,
@@ -25190,21 +24962,19 @@ cr.getObjectRefTable = function () { return [
 	cr.system_object.prototype.exps.dt,
 	cr.system_object.prototype.cnds.Compare,
 	cr.system_object.prototype.exps.distance,
-	cr.system_object.prototype.acts.CreateObject,
-	cr.plugins_.Sprite.prototype.exps.ImagePointX,
-	cr.plugins_.Sprite.prototype.exps.ImagePointY,
 	cr.behaviors.Pin.prototype.acts.Pin,
 	cr.system_object.prototype.exps.random,
 	cr.behaviors.Flash.prototype.acts.Flash,
-	cr.system_object.prototype.cnds.Else,
 	cr.plugins_.Sprite.prototype.cnds.CompareX,
 	cr.plugins_.Sprite.prototype.acts.MoveToTop,
 	cr.system_object.prototype.acts.RestartLayout,
 	cr.plugins_.Touch.prototype.cnds.OnTapGestureObject,
-	cr.behaviors.Timer.prototype.acts.StartTimer,
-	cr.plugins_.Touch.prototype.cnds.IsTouchingObject,
-	cr.plugins_.Audio.prototype.acts.Stop,
+	cr.plugins_.SpriteFontPlus.prototype.acts.SetVisible,
+	cr.plugins_.Text.prototype.acts.Destroy,
+	cr.plugins_.Sprite.prototype.exps.Count,
+	cr.plugins_.Text.prototype.acts.SetVisible,
 	cr.system_object.prototype.acts.GoToLayout,
+	cr.plugins_.Audio.prototype.acts.Stop,
 	cr.plugins_.Sprite.prototype.cnds.CompareWidth,
 	cr.plugins_.Sprite.prototype.exps.Width
 ];};
