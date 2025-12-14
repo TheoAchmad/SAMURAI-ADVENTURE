@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1765707595,
+	"version": 1765734663,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -47,6 +47,8 @@
 		"images/backroundlevel-sheet0.png",
 		"images/sprite25-sheet0.png",
 		"images/pilihkerajaan-sheet0.png",
+		"images/spritefont2.png",
+		"images/sprite26-sheet0.png",
 		"media/sword slash1_cut (mp3cut.net).m4a",
 		"media/sword slash1_cut (mp3cut.net).ogg",
 		"media/sword slash (sound effects) mani creation (mp3cut.net).m4a",
