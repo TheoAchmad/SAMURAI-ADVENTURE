@@ -1,5 +1,5 @@
 ﻿{
-	"version": 1765621509,
+	"version": 1765707595,
 	"fileList": [
 		"data.js",
 		"c2runtime.js",
@@ -43,8 +43,10 @@
 		"images/kanan-sheet0.png",
 		"images/atas-sheet0.png",
 		"images/spritefont.png",
-		"images/sprite22-sheet0.png",
+		"images/pilihhutan-sheet0.png",
+		"images/backroundlevel-sheet0.png",
 		"images/sprite25-sheet0.png",
+		"images/pilihkerajaan-sheet0.png",
 		"media/sword slash1_cut (mp3cut.net).m4a",
 		"media/sword slash1_cut (mp3cut.net).ogg",
 		"media/sword slash (sound effects) mani creation (mp3cut.net).m4a",

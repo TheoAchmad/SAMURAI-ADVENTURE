@@ -24906,11 +24906,11 @@ cr.behaviors.solid = function(runtime)
 }());
 cr.getObjectRefTable = function () { return [
 	cr.plugins_.Audio,
-	cr.plugins_.Keyboard,
 	cr.plugins_.Mouse,
+	cr.plugins_.Keyboard,
+	cr.plugins_.SpriteFontPlus,
 	cr.plugins_.Sprite,
 	cr.plugins_.Touch,
-	cr.plugins_.SpriteFontPlus,
 	cr.plugins_.Text,
 	cr.behaviors.solid,
 	cr.behaviors.Platform,
@@ -24968,13 +24968,13 @@ cr.getObjectRefTable = function () { return [
 	cr.plugins_.Sprite.prototype.cnds.CompareX,
 	cr.plugins_.Sprite.prototype.acts.MoveToTop,
 	cr.system_object.prototype.acts.RestartLayout,
+	cr.plugins_.Audio.prototype.cnds.IsTagPlaying,
 	cr.plugins_.Touch.prototype.cnds.OnTapGestureObject,
-	cr.plugins_.SpriteFontPlus.prototype.acts.SetVisible,
-	cr.plugins_.Text.prototype.acts.Destroy,
-	cr.plugins_.Sprite.prototype.exps.Count,
-	cr.plugins_.Text.prototype.acts.SetVisible,
 	cr.system_object.prototype.acts.GoToLayout,
-	cr.plugins_.Audio.prototype.acts.Stop,
 	cr.plugins_.Sprite.prototype.cnds.CompareWidth,
-	cr.plugins_.Sprite.prototype.exps.Width
+	cr.plugins_.Sprite.prototype.exps.Width,
+	cr.system_object.prototype.cnds.CompareVar,
+	cr.system_object.prototype.acts.SetVar,
+	cr.plugins_.Audio.prototype.acts.Stop,
+	cr.plugins_.Sprite.prototype.acts.SetAnimFrame
 ];};
